@@ -848,9 +848,9 @@ int find_xbootldr_and_warn_at(
         r = verify_xbootldr(rfd, "/boot", flags | VERIFY_ESP_SEARCHING, ret_path, ret_uuid, ret_devid);
         if (r < 0) {
                 if (!IN_SET(r, -ENOENT, -EADDRNOTAVAIL, -ENOTDIR, -ENOTTY)) /* This one is not it */
-                        return r;
+                        return log_error_errno(r, "Verify Xbootldr returned '%i'", r);
 
-                return -ENOKEY;
+                return log_error_errno(SYNTHETIC_ERRNO(ENOKEY), "Verify Xbootldr returned ENOKEY '%i'", -ENOKEY);;
         }
 
         return 0;
