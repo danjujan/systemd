@@ -311,7 +311,7 @@ success:
                 return 0;
 
         if (sxa.sx.stx_dev_major == 0) /* Hmm, maybe a btrfs device, and the caller asked for the backing device? Then let's try to get it. */ {
-                log_debug("Device major == %i", sxa.sx.stx_dev_major);
+                log_debug("Device major == %u", sxa.sx.stx_dev_major);
                 return btrfs_get_block_device_at(dir_fd, strempty(f), ret_dev);
         }
 
