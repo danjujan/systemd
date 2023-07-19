@@ -296,8 +296,10 @@ static int verify_fsroot_dir(
                 return log_full_errno(unprivileged_mode && ERRNO_IS_PRIVILEGE(r) ? LOG_DEBUG : LOG_ERR, r,
                                       "Failed to determine block device node of parent of \"%s\": %m", path);
 
-        if (statx_inode_same(&sxa.sx, &sxb.sx)) /* for the root dir inode nr for both inodes will be the same */
+        if (statx_inode_same(&sxa.sx, &sxb.sx)) /* for the root dir inode nr for both inodes will be the same */ {
+                log_debug("statx inode same goto success");
                 goto success;
+        }
 
         if (statx_mount_same(&sxa.nsx, &sxb.nsx))
                 return log_full_errno(searching ? LOG_DEBUG : LOG_ERR,
@@ -308,8 +310,10 @@ success:
         if (!ret_dev)
                 return 0;
 
-        if (sxa.sx.stx_dev_major == 0) /* Hmm, maybe a btrfs device, and the caller asked for the backing device? Then let's try to get it. */
+        if (sxa.sx.stx_dev_major == 0) /* Hmm, maybe a btrfs device, and the caller asked for the backing device? Then let's try to get it. */ {
+                log_debug("Device major == %i", sxa.sx.stx_dev_major);
                 return btrfs_get_block_device_at(dir_fd, strempty(f), ret_dev);
+        }
 
         *ret_dev = makedev(sxa.sx.stx_dev_major, sxa.sx.stx_dev_minor);
         return 0;
