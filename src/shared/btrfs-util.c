@@ -208,17 +208,25 @@ int btrfs_get_block_device_at(int dir_fd, const char *path, dev_t *ret) {
         assert(ret);
 
         fd = xopenat(dir_fd, path, O_RDONLY|O_CLOEXEC|O_NONBLOCK|O_NOCTTY, /* xopen_flags = */ 0, /* mode = */ 0);
-        if (fd < 0)
+        if (fd < 0) {
+                log_debug("Btrfs get block device at xopenat returns fd %i", fd);
                 return fd;
+        }
 
         r = fd_is_fs_type(fd, BTRFS_SUPER_MAGIC);
-        if (r < 0)
+        if (r < 0) {
+                log_debug("Btrfs get block device at fd_is_fs_type returns %i", r);
                 return r;
-        if (!r)
+        }
+        if (!r) {
+                log_debug("Btrfs get block device at fd_is_fs_type returns -ENOTTY");
                 return -ENOTTY;
+        }
 
-        if (ioctl(fd, BTRFS_IOC_FS_INFO, &fsi) < 0)
+        if (ioctl(fd, BTRFS_IOC_FS_INFO, &fsi) < 0) {
+                log_debug("Btrfs get block device at ioctl fd, BTRFS_IOC_FS_INFO returns errno %i", -errno);
                 return -errno;
+        }
 
         /* We won't do this for btrfs RAID */
         if (fsi.num_devices != 1) {
@@ -233,9 +241,12 @@ int btrfs_get_block_device_at(int dir_fd, const char *path, dev_t *ret) {
                 struct stat st;
 
                 if (ioctl(fd, BTRFS_IOC_DEV_INFO, &di) < 0) {
-                        if (errno == ENODEV)
+                        if (errno == ENODEV) {
+                                log_debug("Btrfs get block device at errno == enodev continue");
                                 continue;
+                        }
 
+                        log_debug("Btrfs get block device at ioctl fd, BTRFS_IOC_DEV_INFO returns errno %i", -errno);
                         return -errno;
                 }
 
@@ -245,9 +256,13 @@ int btrfs_get_block_device_at(int dir_fd, const char *path, dev_t *ret) {
                  * message about this.
                  *
                  * https://bugzilla.kernel.org/show_bug.cgi?id=89721 */
-                if (path_equal((char*) di.path, "/dev/root"))
+                if (path_equal((char*) di.path, "/dev/root")) {
+                        log_debug("Btrfs get block device at path_equal returns errno EUCLEAN");
                         return -EUCLEAN;
+                }
 
+                
+                log_debug("btrs function needs further logging?!");
                 if (stat((char*) di.path, &st) < 0)
                         return -errno;
 
