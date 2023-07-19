@@ -762,17 +762,24 @@ static int verify_xbootldr(
 
         r = verify_fsroot_dir(pfd, p, flags, relax_checks ? NULL : &devid);
         if (r < 0)
-                return r;
+                return log_error_errno(r, "VerifyFSRootDir returned '%i'", r);
 
-        if (relax_checks)
+        if (relax_checks) {
+                log_debug("Relax checks goto finish");
                 goto finish;
+        }
 
-        if (unprivileged_mode)
+        if (unprivileged_mode) {
+                log_debug("verify_xbootldr_udev executed");
                 r = verify_xbootldr_udev(devid, flags, ret_uuid);
-        else
+        }
+        else {
+                
+                log_debug("verify_xbootldr_blkid executed");
                 r = verify_xbootldr_blkid(devid, flags, ret_uuid);
+        }
         if (r < 0)
-                return r;
+                return log_error_errno(r, "Verify Xbootldr UDEV or BLKID returned '%i'", r);
 
         if (ret_path)
                 *ret_path = TAKE_PTR(p);
