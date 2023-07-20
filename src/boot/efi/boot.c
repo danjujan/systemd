@@ -1652,7 +1652,7 @@ static void config_load_entries(
                 }
 
                 
-                log_error("load entries readdir read file: %s", f->FileName);
+                log_error("load entries readdir read file: %ls", f->FileName);
                 if (f->FileName[0] == '.')
                         continue;
                 if (FLAGS_SET(f->Attribute, EFI_FILE_DIRECTORY)) {
