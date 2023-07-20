@@ -1509,14 +1509,18 @@ static void config_entry_add_type1(
                 }
         }
 
-        if (entry->type == LOADER_UNDEFINED)
+        if (entry->type == LOADER_UNDEFINED) {
+                log_error("config_entry_add_type1 loader UNDEFINED");
                 return;
+        }
 
         /* check existence */
         _cleanup_(file_closep) EFI_FILE *handle = NULL;
         err = root_dir->Open(root_dir, &handle, entry->loader, EFI_FILE_MODE_READ, 0ULL);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("config_entry_add_type1 check existence  err: %lu", err);
                 return;
+        }
 
         entry->device = device;
         entry->id = xstrdup16(file);
@@ -1642,13 +1646,19 @@ static void config_load_entries(
                 _cleanup_free_ char *content = NULL;
 
                 err = readdir(entries_dir, &f, &f_size);
-                if (err != EFI_SUCCESS || !f)
+                if (err != EFI_SUCCESS || !f) {
+                        log_error("load entries readdir error: %lu", err);
                         break;
+                }
 
+                
+                log_error("load entries readdir read file: %s", f->FileName);
                 if (f->FileName[0] == '.')
                         continue;
-                if (FLAGS_SET(f->Attribute, EFI_FILE_DIRECTORY))
+                if (FLAGS_SET(f->Attribute, EFI_FILE_DIRECTORY)) {
+                        log_error("load entries skip attribute EFI_FILE_DIRECTORY");
                         continue;
+                }
 
                 if (!endswith_no_case(f->FileName, u".conf"))
                         continue;
@@ -1656,8 +1666,13 @@ static void config_load_entries(
                         continue;
 
                 err = file_read(entries_dir, f->FileName, 0, 0, &content, NULL);
-                if (err == EFI_SUCCESS)
+                if (err == EFI_SUCCESS) {
+                        log_error("load entries readdir file read success");
                         config_entry_add_type1(config, device, root_dir, u"\\loader\\entries", f->FileName, content, loaded_image_path);
+                } else {
+                        log_error("load entries readdir file read err %lu", err);
+                }
+                
         }
 }
 
@@ -2243,7 +2258,6 @@ static void config_load_xbootldr(
         assert(config);
         assert(device);
 
-        log_error("config_load_xbootldr before partition_open");
         err = partition_open(MAKE_GUID_PTR(XBOOTLDR), device, &new_device, &root_dir);
         if (err != EFI_SUCCESS) {
                 log_error("config_load_xbootldr partition_open error: %lu", err);
