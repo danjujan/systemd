@@ -2246,7 +2246,7 @@ static void config_load_xbootldr(
         log_error("config_load_xbootldr before partition_open");
         err = partition_open(MAKE_GUID_PTR(XBOOTLDR), device, &new_device, &root_dir);
         if (err != EFI_SUCCESS) {
-                log_error("config_load_xbootldr partition_open error: %i", err);
+                log_error("config_load_xbootldr partition_open error: %lu", err);
                 return;
         }
         

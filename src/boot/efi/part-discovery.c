@@ -163,7 +163,7 @@ static EFI_STATUS find_device(const EFI_GUID *type, EFI_HANDLE *device, EFI_DEVI
         EFI_DEVICE_PATH *partition_path;
         err = BS->HandleProtocol(device, MAKE_GUID_PTR(EFI_DEVICE_PATH_PROTOCOL), (void **) &partition_path);
         if (err != EFI_SUCCESS) {
-                log_error("find_device HandleProtocol 1 error: %i", err);
+                log_error("find_device HandleProtocol 1 error: %lu", err);
                 return err;
         }
 
@@ -192,7 +192,7 @@ static EFI_STATUS find_device(const EFI_GUID *type, EFI_HANDLE *device, EFI_DEVI
         EFI_BLOCK_IO_PROTOCOL *block_io;
         err = BS->LocateDevicePath(MAKE_GUID_PTR(EFI_BLOCK_IO_PROTOCOL), &p, &disk_handle);
         if (err != EFI_SUCCESS) {
-                log_error("find_device LocateDevicePath error: %i", err);
+                log_error("find_device LocateDevicePath error: %lu", err);
                 return err;
         }
         
@@ -204,7 +204,7 @@ static EFI_STATUS find_device(const EFI_GUID *type, EFI_HANDLE *device, EFI_DEVI
         log_error("find_device before HandleProtocol 2");
         err = BS->HandleProtocol(disk_handle, MAKE_GUID_PTR(EFI_BLOCK_IO_PROTOCOL), (void **) &block_io);
         if (err != EFI_SUCCESS) {
-                log_error("find_device HandleProtocol 2 error: %i", err);
+                log_error("find_device HandleProtocol 2 error: %lu", err);
                 return err;
         }
 
@@ -277,7 +277,7 @@ EFI_STATUS partition_open(const EFI_GUID *type, EFI_HANDLE *device, EFI_HANDLE *
         log_error("partition_open before find_device");
         err = find_device(type, device, &partition_path);
         if (err != EFI_SUCCESS) {
-                log_error("partition_open find_device error: %i", err);
+                log_error("partition_open find_device error: %lu", err);
                 return err;
         }
 
@@ -286,7 +286,7 @@ EFI_STATUS partition_open(const EFI_GUID *type, EFI_HANDLE *device, EFI_HANDLE *
         EFI_DEVICE_PATH *dp = partition_path;
         err = BS->LocateDevicePath(MAKE_GUID_PTR(EFI_BLOCK_IO_PROTOCOL), &dp, &new_device);
         if (err != EFI_SUCCESS) {
-                log_error("partition_open LocateDevicePath error: %i", err);
+                log_error("partition_open LocateDevicePath error: %lu", err);
                 return err;
         }
 
@@ -294,7 +294,7 @@ EFI_STATUS partition_open(const EFI_GUID *type, EFI_HANDLE *device, EFI_HANDLE *
         log_error("partition_open before open_volume");
         err = open_volume(new_device, &root_dir);
         if (err != EFI_SUCCESS) {
-                log_error("partition_open open_volume error: %i", err);
+                log_error("partition_open open_volume error: %lu", err);
                 return err;
         }
 
