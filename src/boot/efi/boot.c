@@ -2243,10 +2243,14 @@ static void config_load_xbootldr(
         assert(config);
         assert(device);
 
+        log_error("config_load_xbootldr before partition_open");
         err = partition_open(MAKE_GUID_PTR(XBOOTLDR), device, &new_device, &root_dir);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("config_load_xbootldr partition_open error: %i", err);
                 return;
-
+        }
+        
+        log_error("config_load_xbootldr adding entries");
         config_entry_add_unified(config, new_device, root_dir);
         config_load_entries(config, new_device, root_dir, NULL);
 }
@@ -2583,6 +2587,8 @@ static void config_load_all_entries(
 
         /* scan /loader/entries/\*.conf files */
         config_load_entries(config, loaded_image->DeviceHandle, root_dir, loaded_image_path);
+        
+        log_error("config_load_entries from ESP finished");
 
         /* Similar, but on any XBOOTLDR partition */
         config_load_xbootldr(config, loaded_image->DeviceHandle);
