@@ -158,10 +158,14 @@ static EFI_STATUS find_device(const EFI_GUID *type, EFI_HANDLE *device, EFI_DEVI
         assert(device);
         assert(ret_device_path);
 
+        
+        log_error("find_device before HandleProtocol 1");
         EFI_DEVICE_PATH *partition_path;
         err = BS->HandleProtocol(device, MAKE_GUID_PTR(EFI_DEVICE_PATH_PROTOCOL), (void **) &partition_path);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("find_device HandleProtocol 1 error: %i", err);
                 return err;
+        }
 
         /* Find the (last) partition node itself. */
         EFI_DEVICE_PATH *part_node = NULL;
@@ -173,36 +177,49 @@ static EFI_STATUS find_device(const EFI_GUID *type, EFI_HANDLE *device, EFI_DEVI
                 part_node = node;
         }
 
-        if (!part_node)
+        if (!part_node) {
+                log_error("find_device part_node not found!");
                 return EFI_NOT_FOUND;
+        }
 
         /* Chop off the partition part, leaving us with the full path to the disk itself. */
         _cleanup_free_ EFI_DEVICE_PATH *disk_path = NULL;
         EFI_DEVICE_PATH *p = disk_path = device_path_replace_node(partition_path, part_node, NULL);
 
+        
+        log_error("find_device before LocateDevicePath");
         EFI_HANDLE disk_handle;
         EFI_BLOCK_IO_PROTOCOL *block_io;
         err = BS->LocateDevicePath(MAKE_GUID_PTR(EFI_BLOCK_IO_PROTOCOL), &p, &disk_handle);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("find_device LocateDevicePath error: %i", err);
                 return err;
-
+        }
+        
         /* The drivers for other partitions on this drive may not be initialized on fastboot firmware, so we
          * have to ask the firmware to do just that. */
         (void) BS->ConnectController(disk_handle, NULL, NULL, true);
 
+        
+        log_error("find_device before HandleProtocol 2");
         err = BS->HandleProtocol(disk_handle, MAKE_GUID_PTR(EFI_BLOCK_IO_PROTOCOL), (void **) &block_io);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("find_device HandleProtocol 2 error: %i", err);
                 return err;
+        }
 
         /* Filter out some block devices early. (We only care about block devices that aren't
          * partitions themselves — we look for GPT partition tables to parse after all —, and only
          * those which contain a medium and have at least 2 blocks.) */
         if (block_io->Media->LogicalPartition ||
             !block_io->Media->MediaPresent ||
-            block_io->Media->LastBlock <= 1)
+            block_io->Media->LastBlock <= 1) {
+                log_error("find_device filtered block devices none left");
                 return EFI_NOT_FOUND;
-
+        }
         /* Try several copies of the GPT header, in case one is corrupted */
+        
+        log_error("find_device Try several copies of the GPT header, in case one is corrupted");
         EFI_LBA backup_lba = 0;
         for (size_t nr = 0; nr < 3; nr++) {
                 EFI_LBA lba;
@@ -225,18 +242,23 @@ static EFI_STATUS find_device(const EFI_GUID *type, EFI_HANDLE *device, EFI_DEVI
                         &hd);
                 if (err != EFI_SUCCESS) {
                         /* GPT was valid but no XBOOT loader partition found. */
+                        log_error("find_device GPT was valid but no XBOOT loader partition found");
                         if (err == EFI_NOT_FOUND)
                                 break;
                         /* Bad GPT, try next one. */
+                        
+                        log_error("find_device Bad GPT, try next one");
                         continue;
                 }
 
                 /* Patch in the data we found */
                 *ret_device_path = device_path_replace_node(partition_path, part_node, (EFI_DEVICE_PATH *) &hd);
+                log_error("find_device Path found and returned");
                 return EFI_SUCCESS;
         }
 
         /* No xbootloader partition found */
+        log_error("find_device return no xbootldr partition found");
         return EFI_NOT_FOUND;
 }
 
@@ -251,21 +273,35 @@ EFI_STATUS partition_open(const EFI_GUID *type, EFI_HANDLE *device, EFI_HANDLE *
         assert(device);
         assert(ret_root_dir);
 
+        
+        log_error("partition_open before find_device");
         err = find_device(type, device, &partition_path);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("partition_open find_device error: %i", err);
                 return err;
+        }
 
+        
+        log_error("partition_open before LocateDevicePath");
         EFI_DEVICE_PATH *dp = partition_path;
         err = BS->LocateDevicePath(MAKE_GUID_PTR(EFI_BLOCK_IO_PROTOCOL), &dp, &new_device);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("partition_open LocateDevicePath error: %i", err);
                 return err;
+        }
 
+        
+        log_error("partition_open before open_volume");
         err = open_volume(new_device, &root_dir);
-        if (err != EFI_SUCCESS)
+        if (err != EFI_SUCCESS) {
+                log_error("partition_open open_volume error: %i", err);
                 return err;
+        }
 
-        if (ret_device)
+        if (ret_device) {
                 *ret_device = new_device;
+                log_error("partition_open ret_device = new_device");
+        }
         *ret_root_dir = root_dir;
         return EFI_SUCCESS;
 }
