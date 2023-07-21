@@ -1515,6 +1515,7 @@ static void config_entry_add_type1(
         }
 
         /* check existence */
+        log_error("config_entry_add_type1 check existence of file:  %ls", entry->loader);
         _cleanup_(file_closep) EFI_FILE *handle = NULL;
         err = root_dir->Open(root_dir, &handle, entry->loader, EFI_FILE_MODE_READ, 0ULL);
         if (err != EFI_SUCCESS) {
@@ -2265,6 +2266,7 @@ static void config_load_xbootldr(
         }
         
         log_error("config_load_xbootldr adding entries");
+        config_load_defaults(config, root_dir); 
         config_entry_add_unified(config, new_device, root_dir);
         config_load_entries(config, new_device, root_dir, NULL);
 }
