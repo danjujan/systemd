@@ -40,14 +40,6 @@ fi
 if [ ! -f "$BUILDDIR"/build.ninja ]; then
     sysvinit_path=$(realpath /etc/init.d)
 
-    init_path=$(realpath /sbin/init 2>/dev/null)
-    if [ -z "$init_path" ]; then
-        rootprefix=""
-    else
-        rootprefix=${init_path%/lib/systemd/systemd}
-        rootprefix=/${rootprefix#/}
-    fi
-
     . /etc/os-release
     if [ "$ID" = "centos" ] && [ "$VERSION" = "8" ]; then
         UKIFY=false
@@ -55,9 +47,15 @@ if [ ! -f "$BUILDDIR"/build.ninja ]; then
         UKIFY=true
     fi
 
+    # On Debian 'loadkeys us' fails
+    if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
+        DEFAULT_KEYMAP=""
+    else
+        DEFAULT_KEYMAP="us"
+    fi
+
     CONFIGURE_OPTS=(
         -D sysvinit-path="$sysvinit_path"
-        -D rootprefix="$rootprefix"
         -D man=false
         -D translations=false
         -D version-tag="${VERSION_TAG}"
@@ -149,6 +147,7 @@ if [ ! -f "$BUILDDIR"/build.ninja ]; then
         -D first-boot-full-preset=true
         -D initrd=true
         -D fexecve=true
+        -D default-keymap="$DEFAULT_KEYMAP"
     )
 
     # On debian-like systems the library directory is not /usr/lib64 but /usr/lib/<arch-triplet>/.
@@ -156,7 +155,7 @@ if [ ! -f "$BUILDDIR"/build.ninja ]; then
     # installed in the wrong directory and not be found by cryptsetup. Assume native build.
     if grep -q -e "ID=debian" -e "ID_LIKE=debian" /etc/os-release && command -v dpkg 2>/dev/null; then
         CONFIGURE_OPTS+=(
-            -D rootlibdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+            -D libdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
             -D pamlibdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/security"
         )
     fi

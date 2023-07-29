@@ -994,7 +994,7 @@ int link_drop_ipv6ll_addresses(Link *link) {
 
 int link_drop_foreign_addresses(Link *link) {
         Address *address;
-        int k, r = 0;
+        int r = 0;
 
         assert(link);
         assert(link->network);
@@ -1054,9 +1054,7 @@ int link_drop_foreign_addresses(Link *link) {
                 if (!address_is_marked(address))
                         continue;
 
-                k = address_remove(address);
-                if (k < 0 && r >= 0)
-                        r = k;
+                RET_GATHER(r, address_remove(address));
         }
 
         return r;
@@ -1064,7 +1062,7 @@ int link_drop_foreign_addresses(Link *link) {
 
 int link_drop_managed_addresses(Link *link) {
         Address *address;
-        int k, r = 0;
+        int r = 0;
 
         assert(link);
 
@@ -1077,11 +1075,7 @@ int link_drop_managed_addresses(Link *link) {
                 if (!address_exists(address))
                         continue;
 
-                k = address_remove(address);
-                if (k < 0 && r >= 0) {
-                        r = k;
-                        continue;
-                }
+                RET_GATHER(r, address_remove(address));
         }
 
         return r;
@@ -1210,9 +1204,6 @@ static bool address_is_ready_to_configure(Link *link, const Address *address) {
         assert(address);
 
         if (!link_is_ready_to_configure(link, false))
-                return false;
-
-        if (address_is_removing(address))
                 return false;
 
         if (!ipv4acd_bound(address))
@@ -1741,7 +1732,7 @@ int config_parse_address(
                 r = in_addr_prefix_from_string_auto(rvalue, &f, &buffer, &prefixlen);
                 if (r >= 0)
                         log_syntax(unit, LOG_WARNING, filename, line, r,
-                                   "An address '%s' is specified without prefix length. Assuming the prefix length is %u."
+                                   "Address '%s' is specified without prefix length. Assuming the prefix length is %u."
                                    "Please specify the prefix length explicitly.", rvalue, prefixlen);
         }
         if (r < 0) {
